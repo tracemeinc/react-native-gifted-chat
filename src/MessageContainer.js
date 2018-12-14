@@ -15,6 +15,8 @@ import { FlatList, View, StyleSheet, Keyboard } from 'react-native';
 import LoadEarlier from './LoadEarlier';
 import Message from './Message';
 
+const RENDER_CELL_DELAY_BEFORE_SCROLL_MS = 100;
+
 export default class MessageContainer extends React.PureComponent {
 
   constructor(props) {
@@ -26,6 +28,8 @@ export default class MessageContainer extends React.PureComponent {
     this.renderHeaderWrapper = this.renderHeaderWrapper.bind(this);
     this.attachKeyboardListeners = this.attachKeyboardListeners.bind(this);
     this.detatchKeyboardListeners = this.detatchKeyboardListeners.bind(this);
+    this.forceCellsToRender = this.forceCellsToRender.bind(this);
+    this.onScrollToIndexFailed = this.onScrollToIndexFailed.bind(this);
 
     if (props.messages.length === 0) {
       this.attachKeyboardListeners(props);
@@ -77,10 +81,55 @@ export default class MessageContainer extends React.PureComponent {
     return null;
   }
 
+  forceCellsToRender() {
+    // FlatList provides no way to force cells to render and we don't
+    // want to add arbitrarily long delays, so we must talk directly to
+    // the virtualizedList to force a hiPri cell render (same as what
+    // happens while scrolling down)
+    if (!this.flatListRef) {
+      return;
+    }
+    try {
+      const virtualizedList = this.flatListRef._listRef;
+      virtualizedList._updateCellsToRenderBatcher.dispose({
+        abort: true,
+      });
+      virtualizedList._updateCellsToRender();
+    } catch (error) {
+      // Nothing we can do.
+    }
+  }
+
   scrollTo(options) {
     if (this.flatListRef) {
       this.flatListRef.scrollToOffset(options);
     }
+  }
+
+  scrollToIndex(options) {
+    if (this.flatListRef) {
+      this.scrollToIndexOptions = options;
+      this.flatListRef.scrollToIndex(options);
+    }
+  }
+
+  onScrollToIndexInProgress(inProgress) {
+    if (this.props.onScrollToIndexInProgress) {
+      this.props.onScrollToIndexInProgress(inProgress);
+    }
+  }
+
+  onScrollToIndexFailed({ index }) {
+    this.onScrollToIndexInProgress(true);
+    this.forceCellsToRender();
+    setTimeout(() => {
+      this.onScrollToIndexInProgress(false);
+      this.flatListRef.scrollToIndex({
+        animated: this.scrollToIndexOptions.animated,
+        index,
+        viewPosition: this.scrollToIndexOptions.viewPosition,
+      });
+    }, RENDER_CELL_DELAY_BEFORE_SCROLL_MS);
   }
 
   renderRow({ item, index }) {
@@ -136,6 +185,7 @@ export default class MessageContainer extends React.PureComponent {
           ListFooterComponent={this.renderHeaderWrapper}
           ListHeaderComponent={this.renderFooter}
           {...this.props.listViewProps}
+          onScrollToIndexFailed={this.onScrollToIndexFailed}
         />
       </View>
     );
@@ -181,4 +231,5 @@ MessageContainer.propTypes = {
   inverted: PropTypes.bool,
   loadEarlier: PropTypes.bool,
   invertibleScrollViewProps: PropTypes.object, // TODO: support or not?
+  onScrollToIndexInProgress: PropTypes.func,
 };

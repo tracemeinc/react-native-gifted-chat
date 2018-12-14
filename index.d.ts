@@ -251,6 +251,12 @@ export class GiftedChat extends React.Component<GiftedChatProps> {
     messages: IMessage[],
     inverted?: boolean
   ): IMessage[];
+  scrollToIndex: (options: {
+    animated?: boolean;
+    index: number;
+    viewOffset?: number;
+    viewPosition?: number
+  }) => void;
 }
 
 interface InputToolbarProps {
@@ -308,6 +314,7 @@ interface MessageContainerProps {
   loadEarlier?: boolean;
   // todo: should be InvertibleScrollView props
   invertibleScrollViewProps?: object;
+  onScrollToIndexInProgress?: (inProgress: boolean) => void;
 }
 
 export class MessageContainer extends React.Component<MessageContainerProps> { }
