@@ -251,6 +251,9 @@ export class GiftedChat extends React.Component<GiftedChatProps> {
     messages: IMessage[],
     inverted?: boolean
   ): IMessage[];
+  scrollToBottom: (
+    animated?: boolean;
+  ) => void;
   scrollToIndex: (options: {
     animated?: boolean;
     index: number;
