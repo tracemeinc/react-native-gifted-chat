@@ -171,10 +171,14 @@ class GiftedChat extends React.Component {
   }
 
   getKeyboardHeight() {
-    if (Platform.OS === 'android' && !this.props.forceGetKeyboardHeight) {
+    if (!this.props.forceGetKeyboardHeight) {
       // For android: on-screen keyboard resized main container and has own height.
       // @see https://developer.android.com/training/keyboard-input/visibility.html
       // So for calculate the messages container height ignore keyboard height.
+
+      // In the Tally app, we are wrapping GiftedChat in a KeyboardAvoidingView,
+      // so _keyboardHeight ends up causing the keyboard height to be accounted
+      // for twice on ios.
       return 0;
     }
     return this._keyboardHeight;
